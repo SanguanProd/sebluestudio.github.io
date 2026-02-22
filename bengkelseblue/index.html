@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bengkel Seblu — Editor Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=Syne+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #06080D; --bg2: #0B0E16; --card: #10131C; --border: #1A1F2E;
+  --accent: #00F0FF; --accent2: #FF2D78; --accent3: #FFDD00;
+  --text: #DDE1EE; --muted: #4A5068; --success: #00D97E; --danger: #FF4444;
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'Syne Mono', monospace;
+}
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-weight: 300; min-height: 100vh; }
+
+/* TOP BAR */
+.topbar {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 14px 32px; display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-brand { display: flex; align-items: center; gap: 14px; }
+.topbar-logo { font-family: var(--font-display); font-size: 18px; letter-spacing: 3px; color: var(--accent); }
+.topbar-badge { font-family: var(--font-mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; background: rgba(255,45,120,.15); color: var(--accent2); border: 1px solid rgba(255,45,120,.3); padding: 3px 10px; }
+.topbar-actions { display: flex; gap: 10px; align-items: center; }
+.btn-save {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--bg); background: var(--accent); border: none; padding: 10px 24px; cursor: pointer;
+  transition: background .2s; clip-path: polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
+}
+.btn-save:hover { background: var(--accent3); }
+.btn-preview {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text); background: none; border: 1px solid var(--border); padding: 10px 24px; cursor: pointer;
+  transition: border-color .2s; text-decoration: none; display: inline-block;
+}
+.btn-preview:hover { border-color: var(--accent); color: var(--accent); }
+.btn-reset {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); background: none; border: 1px solid var(--border); padding: 10px 18px; cursor: pointer;
+  transition: border-color .2s,color .2s;
+}
+.btn-reset:hover { border-color: var(--danger); color: var(--danger); }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 32px; right: 32px; z-index: 9999;
+  background: var(--card); border: 1px solid var(--success); color: var(--success);
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+  padding: 14px 24px; display: flex; align-items: center; gap: 10px;
+  transform: translateY(80px); opacity: 0; transition: all .3s;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* LAYOUT */
+.editor-layout { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 57px); }
+
+/* SIDEBAR */
+.sidebar {
+  background: var(--bg2); border-right: 1px solid var(--border);
+  padding: 24px 0; position: sticky; top: 57px; height: calc(100vh - 57px); overflow-y: auto;
+}
+.sidebar-section { margin-bottom: 8px; }
+.sidebar-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--muted); padding: 10px 24px 6px;
+}
+.sidebar-btn {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 10px 24px; background: none; border: none; cursor: pointer;
+  font-family: var(--font-body); font-size: 13px; color: var(--muted);
+  text-align: left; transition: background .15s, color .15s; border-left: 2px solid transparent;
+}
+.sidebar-btn:hover { background: rgba(0,240,255,.04); color: var(--text); }
+.sidebar-btn.active { background: rgba(0,240,255,.06); color: var(--accent); border-left-color: var(--accent); }
+.sidebar-btn .icon { font-size: 14px; }
+
+/* MAIN EDITOR */
+.editor-main { padding: 40px; overflow-y: auto; }
+.editor-panel { display: none; }
+.editor-panel.active { display: block; }
+
+.panel-title {
+  font-family: var(--font-display); font-size: 28px; letter-spacing: 3px; color: var(--text);
+  margin-bottom: 6px;
+}
+.panel-desc { font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 32px; }
+
+/* FIELDS */
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.field-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.field-full { grid-column: 1 / -1; }
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field-label {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+}
+.field-input, .field-textarea, .field-select {
+  background: var(--card); border: 1px solid var(--border); color: var(--text);
+  padding: 11px 14px; font-family: var(--font-body); font-size: 14px; outline: none;
+  transition: border-color .2s; width: 100%; resize: vertical;
+}
+.field-input:focus, .field-textarea:focus, .field-select:focus { border-color: var(--accent); }
+.field-textarea { min-height: 100px; }
+.field-select option { background: var(--card); }
+.field-hint { font-family: var(--font-mono); font-size: 9px; letter-spacing: 1px; color: var(--muted); }
+
+/* PHOTO UPLOAD */
+.photo-upload-area {
+  border: 2px dashed var(--border); padding: 40px; text-align: center; cursor: pointer;
+  transition: border-color .2s; position: relative; overflow: hidden;
+}
+.photo-upload-area:hover { border-color: var(--accent); }
+.photo-upload-area.has-photo { border-style: solid; border-color: var(--accent); }
+.photo-preview { width: 100%; max-height: 300px; object-fit: cover; display: block; margin-bottom: 16px; }
+.photo-upload-icon { font-size: 48px; margin-bottom: 12px; opacity: .4; }
+.photo-upload-text { font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.photo-upload-text b { color: var(--accent); font-weight: 400; }
+.photo-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.btn-remove-photo {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--danger); background: none; border: 1px solid var(--danger); padding: 8px 16px;
+  cursor: pointer; margin-top: 12px; transition: background .2s;
+}
+.btn-remove-photo:hover { background: rgba(255,68,68,.1); }
+
+/* SECTION DIVIDER */
+.sec-div { border-top: 1px solid var(--border); margin: 32px 0; }
+
+/* PORTFOLIO ITEMS */
+.portfolio-items { display: flex; flex-direction: column; gap: 16px; }
+.portfolio-item-row {
+  background: var(--card); border: 1px solid var(--border); padding: 20px;
+  position: relative;
+}
+.portfolio-item-row:hover { border-color: var(--border); }
+.pi-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.pi-num { font-family: var(--font-display); font-size: 20px; color: var(--accent); }
+.pi-actions { display: flex; gap: 8px; }
+.pi-btn {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  border: 1px solid var(--border); background: none; color: var(--muted); padding: 5px 12px; cursor: pointer;
+  transition: all .2s;
+}
+.pi-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+.pi-img-preview { width: 100%; max-height: 150px; object-fit: cover; margin-bottom: 12px; display: block; border: 1px solid var(--border); }
+.add-item-btn {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--accent); border: 1px dashed var(--accent); background: none; padding: 14px 24px;
+  cursor: pointer; width: 100%; transition: background .2s;
+}
+.add-item-btn:hover { background: rgba(0,240,255,.05); }
+
+/* EXPERIENCE ITEMS */
+.exp-items { display: flex; flex-direction: column; gap: 16px; }
+.exp-item-row { background: var(--card); border: 1px solid var(--border); padding: 20px; }
+.add-exp-btn {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--accent2); border: 1px dashed var(--accent2); background: none; padding: 14px 24px;
+  cursor: pointer; width: 100%; transition: background .2s; margin-top: 16px;
+}
+.add-exp-btn:hover { background: rgba(255,45,120,.05); }
+
+/* SKILLS EDITOR */
+.skill-editor { display: flex; flex-direction: column; gap: 20px; }
+.skill-group-edit { background: var(--card); border: 1px solid var(--border); padding: 20px; }
+.skill-group-edit-title { font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+.skill-tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.skill-tag-edit {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; color: var(--text);
+  border: 1px solid var(--border); padding: 5px 12px; display: flex; align-items: center; gap: 8px;
+  transition: border-color .2s;
+}
+.skill-tag-edit .rm { cursor: pointer; color: var(--accent2); font-size: 12px; line-height: 1; }
+.skill-tag-edit .rm:hover { opacity: .8; }
+.add-skill-row { display: flex; gap: 8px; }
+.skill-add-input { flex: 1; background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; font-family: var(--font-body); font-size: 13px; outline: none; transition: border-color .2s; }
+.skill-add-input:focus { border-color: var(--accent); }
+.skill-add-btn {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--bg); background: var(--accent); border: none; padding: 8px 16px; cursor: pointer; transition: background .2s;
+}
+.skill-add-btn:hover { background: var(--accent3); }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .editor-layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; display: flex; flex-wrap: wrap; gap: 0; padding: 12px; border-right: none; border-bottom: 1px solid var(--border); }
+  .sidebar-section { display: flex; flex-wrap: wrap; }
+  .sidebar-label { display: none; }
+  .sidebar-btn { width: auto; padding: 8px 16px; border-left: none; border-bottom: 2px solid transparent; font-size: 12px; }
+  .sidebar-btn.active { border-bottom-color: var(--accent); border-left: none; }
+  .editor-main { padding: 20px; }
+  .field-grid { grid-template-columns: 1fr; }
+  .field-grid-3 { grid-template-columns: 1fr; }
+  .topbar { padding: 12px 16px; }
+  .topbar-badge { display: none; }
+  .toast { bottom: 16px; right: 16px; left: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast">✓ Tersimpan!</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">⚙ BENGKEL SEBLU</div>
+    <div class="topbar-badge">Editor Panel</div>
+  </div>
+  <div class="topbar-actions">
+    <a href="../" class="btn-preview">← Preview Portfolio</a>
+    <button class="btn-reset" onclick="confirmReset()">Reset</button>
+    <button class="btn-save" onclick="saveAll()">Simpan Semua</button>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="editor-layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Konten</div>
+      <button class="sidebar-btn active" data-panel="profile" onclick="switchPanel('profile', this)"><span class="icon">👤</span> Profil & Foto</button>
+      <button class="sidebar-btn" data-panel="hero" onclick="switchPanel('hero', this)"><span class="icon">🌟</span> Hero Section</button>
+      <button class="sidebar-btn" data-panel="about" onclick="switchPanel('about', this)"><span class="icon">📝</span> About Me</button>
+      <button class="sidebar-btn" data-panel="skills" onclick="switchPanel('skills', this)"><span class="icon">⚡</span> Skills</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Portofolio</div>
+      <button class="sidebar-btn" data-panel="portfolio" onclick="switchPanel('portfolio', this)"><span class="icon">🗂️</span> Portfolio Items</button>
+      <button class="sidebar-btn" data-panel="experience" onclick="switchPanel('experience', this)"><span class="icon">🏆</span> Experience</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Lainnya</div>
+      <button class="sidebar-btn" data-panel="contact" onclick="switchPanel('contact', this)"><span class="icon">📬</span> Kontak & Sosial</button>
+      <button class="sidebar-btn" data-panel="services" onclick="switchPanel('services', this)"><span class="icon">🛠️</span> Services</button>
+    </div>
+  </div>
+
+  <!-- EDITOR MAIN -->
+  <div class="editor-main">
+
+    <!-- PROFIL & FOTO -->
+    <div class="editor-panel active" id="panel-profile">
+      <div class="panel-title">PROFIL & FOTO</div>
+      <div class="panel-desc">Upload foto profil dan atur informasi dasar</div>
+
+      <div class="field">
+        <div class="field-label">Foto Profil</div>
+        <div class="photo-upload-area" id="photoUploadArea">
+          <img id="photoPreview" class="photo-preview" style="display:none">
+          <div id="photoUploadInner">
+            <div class="photo-upload-icon">📷</div>
+            <div class="photo-upload-text">Klik atau drag foto ke sini<br><b>Pilih Foto</b></div>
+          </div>
+          <input type="file" class="photo-input" id="photoInput" accept="image/*">
+        </div>
+        <button class="btn-remove-photo" id="removePhotoBtn" style="display:none" onclick="removePhoto()">Hapus Foto</button>
+        <div class="field-hint">Format: JPG, PNG, WEBP. Rekomendasi: rasio 4:5, min 800px</div>
+      </div>
+
+      <div class="sec-div"></div>
+      <div class="field-grid">
+        <div class="field"><div class="field-label">Nama Lengkap</div><input class="field-input" id="fName" placeholder="Fazri Rizqia N"></div>
+        <div class="field"><div class="field-label">Role / Jabatan</div><input class="field-input" id="fRole" placeholder="Multimedia / IT / Creative"></div>
+        <div class="field"><div class="field-label">Lokasi</div><input class="field-input" id="fLocation" placeholder="Indonesia 🇮🇩"></div>
+        <div class="field"><div class="field-label">Status Kerja</div><input class="field-input" id="fStatus" placeholder="Open to Opportunities"></div>
+        <div class="field"><div class="field-label">Bahasa</div><input class="field-input" id="fLang" placeholder="Indonesian, English"></div>
+      </div>
+
+      <div class="sec-div"></div>
+      <div class="field-grid">
+        <div class="field"><div class="field-label">Email</div><input class="field-input" id="fEmail" type="email" placeholder="fazri@email.com"></div>
+        <div class="field"><div class="field-label">Nomor HP / WA</div><input class="field-input" id="fPhone" placeholder="+62 xxx-xxxx-xxxx"></div>
+      </div>
+    </div>
+
+    <!-- HERO -->
+    <div class="editor-panel" id="panel-hero">
+      <div class="panel-title">HERO SECTION</div>
+      <div class="panel-desc">Edit bagian utama yang pertama dilihat pengunjung</div>
+      <div class="field-grid">
+        <div class="field"><div class="field-label">Status Badge</div><input class="field-input" id="fHeroStatus" placeholder="Available for Work"></div>
+        <div class="field field-full"><div class="field-label">Tagline / Slogan</div><input class="field-input" id="fHeroTag" placeholder="Multimedia • IT Support • Creative Team&#10;Portfolio by Fazri Rizqia N"></div>
+        <div class="field"><div class="field-label">Tag Foto (kanan bawah)</div><input class="field-input" id="fPhotoTag" placeholder="Creative"></div>
+        <div class="field"><div class="field-label">Tag Foto (kiri atas)</div><input class="field-input" id="fPhotoTag2" placeholder="Based in ID"></div>
+      </div>
+      <div class="sec-div"></div>
+      <div class="field-grid-3">
+        <div class="field"><div class="field-label">Stat: Projects</div><input class="field-input" id="fSP" placeholder="20+"></div>
+        <div class="field"><div class="field-label">Stat: Years Exp</div><input class="field-input" id="fSY" placeholder="3+"></div>
+        <div class="field"><div class="field-label">Stat: Clients</div><input class="field-input" id="fSC" placeholder="15+"></div>
+      </div>
+    </div>
+
+    <!-- ABOUT -->
+    <div class="editor-panel" id="panel-about">
+      <div class="panel-title">ABOUT ME</div>
+      <div class="panel-desc">Edit deskripsi tentang dirimu. Bisa gunakan tag HTML sederhana</div>
+      <div class="field">
+        <div class="field-label">Deskripsi About (HTML diperbolehkan)</div>
+        <textarea class="field-textarea" id="fAbout" style="min-height:180px" placeholder="<p>Halo! Saya <strong>Fazri Rizqia N</strong>...</p>"></textarea>
+        <div class="field-hint">Gunakan &lt;p&gt;...&lt;/p&gt; untuk paragraf, &lt;strong&gt;...&lt;/strong&gt; untuk bold/highlight</div>
+      </div>
+    </div>
+
+    <!-- SKILLS -->
+    <div class="editor-panel" id="panel-skills">
+      <div class="panel-title">SKILLS</div>
+      <div class="panel-desc">Kelola tag skill untuk setiap kategori</div>
+      <div class="skill-editor" id="skillEditor"></div>
+    </div>
+
+    <!-- PORTFOLIO -->
+    <div class="editor-panel" id="panel-portfolio">
+      <div class="panel-title">PORTFOLIO ITEMS</div>
+      <div class="panel-desc">Tambah, edit, atau hapus item portofolio</div>
+      <div class="portfolio-items" id="portfolioItems"></div>
+      <button class="add-item-btn" onclick="addPortfolioItem()" style="margin-top:16px">+ Tambah Item</button>
+    </div>
+
+    <!-- EXPERIENCE -->
+    <div class="editor-panel" id="panel-experience">
+      <div class="panel-title">EXPERIENCE</div>
+      <div class="panel-desc">Kelola riwayat pekerjaan dan pengalaman</div>
+      <div class="exp-items" id="expItems"></div>
+      <button class="add-exp-btn" onclick="addExpItem()">+ Tambah Pengalaman</button>
+    </div>
+
+    <!-- CONTACT -->
+    <div class="editor-panel" id="panel-contact">
+      <div class="panel-title">KONTAK & SOSIAL</div>
+      <div class="panel-desc">Atur informasi kontak dan akun sosial media</div>
+      <div class="field-grid">
+        <div class="field"><div class="field-label">Email</div><input class="field-input" id="cEmail" type="email" placeholder="fazri@email.com"></div>
+        <div class="field"><div class="field-label">Nomor WhatsApp</div><input class="field-input" id="cPhone" placeholder="+62 xxx-xxxx-xxxx"></div>
+        <div class="field"><div class="field-label">Instagram</div><input class="field-input" id="cIG" placeholder="@sebluestudio"></div>
+        <div class="field"><div class="field-label">YouTube Channel</div><input class="field-input" id="cYT" placeholder="Seblu Studio"></div>
+      </div>
+      <div class="sec-div"></div>
+      <div class="field">
+        <div class="field-label">Pesan Contact Section</div>
+        <textarea class="field-textarea" id="fContactBody" placeholder="Punya proyek menarik? Butuh IT support handal? Saya siap membantu!"></textarea>
+      </div>
+    </div>
+
+    <!-- SERVICES -->
+    <div class="editor-panel" id="panel-services">
+      <div class="panel-title">SERVICES</div>
+      <div class="panel-desc">Edit 3 layanan yang ditampilkan di halaman portofolio</div>
+      <div id="servicesEditor" style="display:flex;flex-direction:column;gap:24px"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const DEFAULT = {
+  profilePhoto: null,
+  name: 'Fazri Rizqia N',
+  role: 'Multimedia / IT / Creative',
+  location: 'Indonesia 🇮🇩',
+  email: 'fazri@email.com',
+  phone: '+62 xxx-xxxx-xxxx',
+  instagram: '@sebluestudio',
+  youtube: 'Seblu Studio',
+  status: 'Open to Opportunities',
+  lang: 'Indonesian, English',
+  heroStatus: 'Available for Work',
+  heroTagline: 'Multimedia • IT Support • Creative Team\nPortfolio by Fazri Rizqia N',
+  statProjects: '20+',
+  statYears: '3+',
+  statClients: '15+',
+  photoTag: 'Creative',
+  photoTag2: 'Based in ID',
+  aboutText: '<p>Halo! Saya <strong>Fazri Rizqia N</strong>, seorang profesional di bidang <strong>Multimedia, IT Support,</strong> dan <strong>Creative Team</strong> yang berdedikasi menghadirkan karya berkualitas tinggi.</p><p>Dengan pengalaman di berbagai industri, saya menggabungkan keahlian teknis dan kreativitas untuk menciptakan solusi visual dan digital yang berkesan.</p><p>Saya percaya bahwa <strong>kreativitas dan teknologi</strong> adalah dua sisi koin yang sama.</p>',
+  contactBody: 'Punya proyek menarik? Butuh IT support handal? Atau sekedar ingin ngobrol tentang ide kreatif? Saya siap membantu!',
+  skills: [
+    { group: 'Multimedia', tags: ['Premiere Pro', 'After Effects', 'Photoshop', 'Illustrator', 'DaVinci Resolve'] },
+    { group: 'IT Support', tags: ['Networking', 'Hardware', 'Windows Server', 'Linux', 'Troubleshooting'] },
+    { group: 'Creative', tags: ['Figma', 'Canva', 'Content Creation', 'Social Media'] },
+  ],
+  portfolio: [
+    { title:'Video Production', cat:'multimedia', tags:['Video','Editing'], emoji:'🎬', image:'' },
+    { title:'Brand Identity', cat:'creative', tags:['Branding','Design'], emoji:'✨', image:'' },
+    { title:'Network Setup', cat:'it', tags:['Network','IT'], emoji:'🌐', image:'' },
+    { title:'Social Content', cat:'creative', tags:['Content','Social'], emoji:'📸', image:'' },
+    { title:'IT Infrastructure', cat:'it', tags:['Server','Setup'], emoji:'💻', image:'' },
+  ],
+  experience: [
+    { date:'2023 – Present', role:'Creative Multimedia', company:'Seblu Studio', desc:'Mengelola produksi konten multimedia, video editing, dan desain grafis untuk berbagai klien.' },
+    { date:'2022 – 2023', role:'IT Support Technician', company:'PT. XYZ Indonesia', desc:'Maintenance jaringan, troubleshooting hardware/software, dan administrasi sistem.' },
+    { date:'2021 – 2022', role:'Creative Team Member', company:'Freelance', desc:'Desain konten visual untuk media sosial, brand identity, dan materi marketing.' },
+  ],
+  services: [
+    { name:'MULTIMEDIA', icon:'🎬', desc:'Produksi video, editing, dan post-production berkualitas tinggi.', items:['Video Editing & Color Grading','Motion Graphics','Photography & Retouching','Desain Grafis'] },
+    { name:'IT SUPPORT', icon:'💻', desc:'Solusi teknis komprehensif untuk infrastruktur dan sistem IT.', items:['Network Setup & Maintenance','Hardware Troubleshooting','System Administration','Technical Consulting'] },
+    { name:'CREATIVE TEAM', icon:'✨', desc:'Strategi kreatif dan eksekusi konten untuk brand yang ingin tampil beda.', items:['Content Strategy','Social Media Management','Brand Visual Identity','Creative Direction'] },
+  ]
+};
+
+let state = {};
+
+function load() {
+  try { state = { ...DEFAULT, ...JSON.parse(localStorage.getItem('sebluPortfolio') || '{}') }; }
+  catch(e) { state = { ...DEFAULT }; }
+  fillForms();
+}
+
+function fillForms() {
+  // Profile
+  val('fName', state.name); val('fRole', state.role); val('fLocation', state.location);
+  val('fStatus', state.status); val('fLang', state.lang);
+  val('fEmail', state.email); val('fPhone', state.phone);
+
+  // Hero
+  val('fHeroStatus', state.heroStatus); val('fHeroTag', state.heroTagline || '');
+  val('fPhotoTag', state.photoTag); val('fPhotoTag2', state.photoTag2);
+  val('fSP', state.statProjects); val('fSY', state.statYears); val('fSC', state.statClients);
+
+  // About
+  val('fAbout', state.aboutText);
+
+  // Contact
+  val('cEmail', state.email); val('cPhone', state.phone);
+  val('cIG', state.instagram); val('cYT', state.youtube);
+  val('fContactBody', state.contactBody);
+
+  // Photo
+  if (state.profilePhoto) {
+    showPhotoPreview(state.profilePhoto);
+  }
+
+  // Skills
+  renderSkills();
+
+  // Portfolio
+  renderPortfolio();
+
+  // Experience
+  renderExperience();
+
+  // Services
+  renderServices();
+}
+
+function val(id, v) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (v !== undefined && v !== null) el.value = v;
+}
+
+// PANEL SWITCH
+function switchPanel(name, btn) {
+  document.querySelectorAll('.editor-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// PHOTO
+document.getElementById('photoInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    state.profilePhoto = ev.target.result;
+    showPhotoPreview(ev.target.result);
+  };
+  reader.readAsDataURL(file);
+});
+
+function showPhotoPreview(src) {
+  const preview = document.getElementById('photoPreview');
+  const inner = document.getElementById('photoUploadInner');
+  const area = document.getElementById('photoUploadArea');
+  const btn = document.getElementById('removePhotoBtn');
+  preview.src = src; preview.style.display = 'block';
+  inner.style.display = 'none'; area.classList.add('has-photo');
+  btn.style.display = 'inline-block';
+}
+
+function removePhoto() {
+  state.profilePhoto = null;
+  document.getElementById('photoPreview').style.display = 'none';
+  document.getElementById('photoUploadInner').style.display = 'block';
+  document.getElementById('photoUploadArea').classList.remove('has-photo');
+  document.getElementById('removePhotoBtn').style.display = 'none';
+  document.getElementById('photoInput').value = '';
+}
+
+// SKILLS RENDER
+function renderSkills() {
+  const editor = document.getElementById('skillEditor');
+  const skills = state.skills || DEFAULT.skills;
+  editor.innerHTML = skills.map((g, gi) => `
+    <div class="skill-group-edit">
+      <div class="skill-group-edit-title">${g.group}</div>
+      <div class="skill-tag-list" id="stl-${gi}">
+        ${g.tags.map((t,ti) => `<div class="skill-tag-edit">${t}<span class="rm" onclick="removeSkill(${gi},${ti})">×</span></div>`).join('')}
+      </div>
+      <div class="add-skill-row">
+        <input class="skill-add-input" id="sinput-${gi}" placeholder="Tambah skill..." onkeydown="if(event.key==='Enter'){addSkill(${gi});event.preventDefault();}">
+        <button class="skill-add-btn" onclick="addSkill(${gi})">Add</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addSkill(gi) {
+  const input = document.getElementById('sinput-' + gi);
+  const val = input.value.trim();
+  if (!val) return;
+  if (!state.skills) state.skills = DEFAULT.skills.map(g => ({...g, tags:[...g.tags]}));
+  state.skills[gi].tags.push(val);
+  input.value = '';
+  renderSkills();
+}
+
+function removeSkill(gi, ti) {
+  if (!state.skills) state.skills = DEFAULT.skills.map(g => ({...g, tags:[...g.tags]}));
+  state.skills[gi].tags.splice(ti, 1);
+  renderSkills();
+}
+
+// PORTFOLIO RENDER
+function renderPortfolio() {
+  const items = document.getElementById('portfolioItems');
+  const portfolio = state.portfolio || [];
+  items.innerHTML = portfolio.map((p, i) => `
+    <div class="portfolio-item-row">
+      <div class="pi-header">
+        <div class="pi-num">${String(i+1).padStart(2,'0')}</div>
+        <div class="pi-actions">
+          <button class="pi-btn" onclick="removePortfolioItem(${i})">Hapus</button>
+        </div>
+      </div>
+      ${p.image ? `<img src="${p.image}" class="pi-img-preview">` : ''}
+      <div class="field-grid" style="gap:12px">
+        <div class="field"><div class="field-label">Judul</div><input class="field-input" value="${p.title||''}" oninput="updatePortfolioItem(${i},'title',this.value)"></div>
+        <div class="field"><div class="field-label">Kategori</div>
+          <select class="field-select" onchange="updatePortfolioItem(${i},'cat',this.value)">
+            <option value="multimedia" ${p.cat==='multimedia'?'selected':''}>Multimedia</option>
+            <option value="it" ${p.cat==='it'?'selected':''}>IT Support</option>
+            <option value="creative" ${p.cat==='creative'?'selected':''}>Creative</option>
+          </select>
+        </div>
+        <div class="field"><div class="field-label">Emoji Icon</div><input class="field-input" value="${p.emoji||''}" oninput="updatePortfolioItem(${i},'emoji',this.value)" placeholder="🎬"></div>
+        <div class="field"><div class="field-label">Tags (pisah koma)</div><input class="field-input" value="${(p.tags||[]).join(', ')}" oninput="updatePortfolioItem(${i},'tagsStr',this.value)" placeholder="Video, Editing"></div>
+        <div class="field field-full">
+          <div class="field-label">Gambar Proyek</div>
+          <div class="photo-upload-area" style="padding:20px" onclick="triggerImgInput(${i})">
+            <div class="photo-upload-text"><b>Klik untuk pilih gambar</b> (opsional)</div>
+            <input type="file" id="piimg-${i}" accept="image/*" style="display:none" onchange="uploadPortfolioImg(${i},this)">
+          </div>
+          ${p.image ? `<button class="btn-remove-photo" onclick="updatePortfolioItem(${i},'image','');renderPortfolio()">Hapus Gambar</button>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function triggerImgInput(i) { document.getElementById('piimg-' + i).click(); }
+
+function uploadPortfolioImg(i, input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { updatePortfolioItem(i, 'image', e.target.result); renderPortfolio(); };
+  reader.readAsDataURL(file);
+}
+
+function updatePortfolioItem(i, key, val) {
+  if (!state.portfolio[i]) return;
+  if (key === 'tagsStr') state.portfolio[i].tags = val.split(',').map(t=>t.trim()).filter(Boolean);
+  else state.portfolio[i][key] = val;
+}
+
+function removePortfolioItem(i) {
+  state.portfolio.splice(i, 1); renderPortfolio();
+}
+
+function addPortfolioItem() {
+  if (!state.portfolio) state.portfolio = [];
+  state.portfolio.push({ title:'Proyek Baru', cat:'multimedia', tags:[], emoji:'📁', image:'' });
+  renderPortfolio();
+}
+
+// EXPERIENCE RENDER
+function renderExperience() {
+  const items = document.getElementById('expItems');
+  const exp = state.experience || [];
+  items.innerHTML = exp.map((e, i) => `
+    <div class="exp-item-row">
+      <div class="pi-header">
+        <div class="pi-num">${String(i+1).padStart(2,'0')}</div>
+        <div class="pi-actions"><button class="pi-btn" onclick="removeExpItem(${i})">Hapus</button></div>
+      </div>
+      <div class="field-grid" style="gap:12px">
+        <div class="field"><div class="field-label">Periode</div><input class="field-input" value="${e.date||''}" oninput="updateExp(${i},'date',this.value)" placeholder="2023 – Present"></div>
+        <div class="field"><div class="field-label">Jabatan / Role</div><input class="field-input" value="${e.role||''}" oninput="updateExp(${i},'role',this.value)"></div>
+        <div class="field"><div class="field-label">Perusahaan / Tempat</div><input class="field-input" value="${e.company||''}" oninput="updateExp(${i},'company',this.value)"></div>
+        <div class="field field-full"><div class="field-label">Deskripsi</div><textarea class="field-textarea" style="min-height:70px" oninput="updateExp(${i},'desc',this.value)">${e.desc||''}</textarea></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateExp(i, key, val) { if(state.experience[i]) state.experience[i][key] = val; }
+function removeExpItem(i) { state.experience.splice(i, 1); renderExperience(); }
+function addExpItem() {
+  if (!state.experience) state.experience = [];
+  state.experience.unshift({ date:'20XX – Present', role:'Role Baru', company:'Perusahaan', desc:'Deskripsi pekerjaan.' });
+  renderExperience();
+}
+
+// SERVICES RENDER
+function renderServices() {
+  const editor = document.getElementById('servicesEditor');
+  const services = state.services || DEFAULT.services;
+  editor.innerHTML = services.map((s, si) => `
+    <div class="skill-group-edit">
+      <div class="skill-group-edit-title">Service ${si+1}</div>
+      <div class="field-grid" style="gap:12px">
+        <div class="field"><div class="field-label">Ikon Emoji</div><input class="field-input" value="${s.icon||''}" oninput="updateService(${si},'icon',this.value)"></div>
+        <div class="field"><div class="field-label">Nama</div><input class="field-input" value="${s.name||''}" oninput="updateService(${si},'name',this.value)"></div>
+        <div class="field field-full"><div class="field-label">Deskripsi</div><input class="field-input" value="${s.desc||''}" oninput="updateService(${si},'desc',this.value)"></div>
+        <div class="field field-full"><div class="field-label">List Item (pisah baris baru)</div>
+          <textarea class="field-textarea" style="min-height:90px" oninput="updateService(${si},'itemsStr',this.value)">${(s.items||[]).join('\n')}</textarea>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateService(si, key, val) {
+  if (!state.services) state.services = [...DEFAULT.services];
+  if (!state.services[si]) return;
+  if (key === 'itemsStr') state.services[si].items = val.split('\n').map(t=>t.trim()).filter(Boolean);
+  else state.services[si][key] = val;
+}
+
+// SAVE ALL
+function saveAll() {
+  // Collect form values
+  state.name = g('fName') || state.name;
+  state.role = g('fRole') || state.role;
+  state.location = g('fLocation') || state.location;
+  state.status = g('fStatus') || state.status;
+  state.lang = g('fLang') || state.lang;
+  state.email = g('fEmail') || state.email;
+  state.phone = g('fPhone') || state.phone;
+  state.heroStatus = g('fHeroStatus') || state.heroStatus;
+  state.heroTagline = g('fHeroTag') || state.heroTagline;
+  state.photoTag = g('fPhotoTag') || state.photoTag;
+  state.photoTag2 = g('fPhotoTag2') || state.photoTag2;
+  state.statProjects = g('fSP') || state.statProjects;
+  state.statYears = g('fSY') || state.statYears;
+  state.statClients = g('fSC') || state.statClients;
+  state.aboutText = g('fAbout') || state.aboutText;
+  state.contactBody = g('fContactBody') || state.contactBody;
+  state.instagram = g('cIG') || state.instagram;
+  state.youtube = g('cYT') || state.youtube;
+
+  try {
+    localStorage.setItem('sebluPortfolio', JSON.stringify(state));
+    showToast('Tersimpan! 🎉');
+  } catch(e) {
+    showToast('Error: Storage penuh!');
+  }
+}
+
+function g(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = '✓ ' + msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function confirmReset() {
+  if (confirm('Reset semua data ke default? Data yang sudah disimpan akan hilang.')) {
+    localStorage.removeItem('sebluPortfolio');
+    state = { ...DEFAULT };
+    fillForms();
+    showToast('Data direset ke default');
+  }
+}
+
+// INIT
+load();
+
+// Auto save on tab close
+window.addEventListener('beforeunload', saveAll);
+</script>
+</body>
+</html>
