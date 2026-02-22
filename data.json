@@ -1,0 +1,43 @@
+{
+  "profilePhoto": "",
+  "name": "Fazri Rizqia N",
+  "role": "Multimedia / IT / Creative",
+  "location": "Indonesia 🇮🇩",
+  "email": "fazri@email.com",
+  "phone": "+62 812-3456-7890",
+  "instagram": "@sebluestudio",
+  "youtube": "Seblu Studio",
+  "status": "Open to Opportunities",
+  "lang": "Indonesian, English",
+  "heroStatus": "Available for Work",
+  "heroTagline": "Multimedia • IT Support • Creative Team\nPortfolio by Fazri Rizqia N",
+  "statProjects": "20+",
+  "statYears": "3+",
+  "statClients": "15+",
+  "photoTag": "Creative",
+  "photoTag2": "Based in ID",
+  "aboutText": "<p>Halo! Saya <strong>Fazri Rizqia N</strong>, seorang profesional di bidang <strong>Multimedia, IT Support,</strong> dan <strong>Creative Team</strong> yang berdedikasi menghadirkan karya berkualitas tinggi.</p><p>Dengan pengalaman di berbagai industri, saya menggabungkan keahlian teknis dan kreativitas untuk menciptakan solusi visual dan digital yang berkesan.</p><p>Saya percaya bahwa <strong>kreativitas dan teknologi</strong> adalah dua sisi koin yang sama — dan saya berada di persimpangan keduanya.</p>",
+  "contactBody": "Punya proyek menarik? Butuh IT support yang handal? Atau sekedar ingin ngobrol tentang ide kreatif? Saya siap membantu!",
+  "skills": [
+    { "group": "Multimedia", "tags": ["Premiere Pro", "After Effects", "Photoshop", "Illustrator", "DaVinci Resolve"] },
+    { "group": "IT Support", "tags": ["Networking", "Hardware", "Windows Server", "Linux", "Troubleshooting"] },
+    { "group": "Creative", "tags": ["Figma", "Canva", "Content Creation", "Social Media"] }
+  ],
+  "portfolio": [
+    { "title": "Video Production", "cat": "multimedia", "tags": ["Video", "Editing"], "emoji": "🎬", "image": "" },
+    { "title": "Brand Identity", "cat": "creative", "tags": ["Branding", "Design"], "emoji": "✨", "image": "" },
+    { "title": "Network Setup", "cat": "it", "tags": ["Network", "IT"], "emoji": "🌐", "image": "" },
+    { "title": "Social Content", "cat": "creative", "tags": ["Content", "Social"], "emoji": "📸", "image": "" },
+    { "title": "IT Infrastructure", "cat": "it", "tags": ["Server", "Setup"], "emoji": "💻", "image": "" }
+  ],
+  "experience": [
+    { "date": "2023 – Present", "role": "Creative Multimedia", "company": "Seblu Studio", "desc": "Mengelola produksi konten multimedia, video editing, dan desain grafis untuk berbagai klien." },
+    { "date": "2022 – 2023", "role": "IT Support Technician", "company": "PT. XYZ Indonesia", "desc": "Maintenance jaringan, troubleshooting hardware/software, dan administrasi sistem." },
+    { "date": "2021 – 2022", "role": "Creative Team Member", "company": "Freelance", "desc": "Desain konten visual untuk media sosial, brand identity, dan materi marketing." }
+  ],
+  "services": [
+    { "name": "MULTIMEDIA", "icon": "🎬", "desc": "Produksi video, editing, dan post-production berkualitas tinggi.", "items": ["Video Editing & Color Grading", "Motion Graphics", "Photography & Retouching", "Desain Grafis"] },
+    { "name": "IT SUPPORT", "icon": "💻", "desc": "Solusi teknis komprehensif untuk infrastruktur dan sistem IT.", "items": ["Network Setup & Maintenance", "Hardware Troubleshooting", "System Administration", "Technical Consulting"] },
+    { "name": "CREATIVE TEAM", "icon": "✨", "desc": "Strategi kreatif dan eksekusi konten untuk brand yang ingin tampil beda.", "items": ["Content Strategy", "Social Media Management", "Brand Visual Identity", "Creative Direction"] }
+  ]
+}
